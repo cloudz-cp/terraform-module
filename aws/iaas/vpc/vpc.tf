@@ -1,27 +1,25 @@
+variable vpc_name {}
+variable private_subnets {}
+variable public_subnets {}
+variable cluster_name {}
+variable vpc_cidr {}
+variable vpc_secondary_cidr {}
+variable vpc_secondary_subnets {}
+variable azs {}
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-
-  variable vpc_name {}
-  variable private_subnets {}
-  variable public_subnets {}
-  variable cluster_name {}
-  variable vpc_cidr_block {}
-  variable vpc_secondary_cidr {}
-  variable vpc_secondary_subnets {}
-  
   version = "3.14.2"
 
-  name = local.vpc_name
+  name = var.vpc_name
 
-  cidr = var.vpc_cidr_block
-  #secondary_cidr_blocks = ["144.64.0.0/21"]
+  cidr = var.vpc_cidr
   secondary_cidr_blocks = var.vpc_secondary_cidr
-  azs  = slice(data.aws_availability_zones.available.names, 0, 2)
+  azs  = var.azs
 
   private_subnets = var.private_subnets
   public_subnets  = var.public_subnets
   intra_subnets = var.vpc_secondary_subnets
-  #intra_subnets = ["144.64.0.0/23", "144.64.2.0/23"]
 
   enable_nat_gateway   = true
   single_nat_gateway   = true
@@ -37,5 +35,5 @@ module "vpc" {
     "kubernetes.io/role/internal-elb"             = 1
   }
 
-  tags = local.common.tags
+  #tags = local.common.tags
 }
