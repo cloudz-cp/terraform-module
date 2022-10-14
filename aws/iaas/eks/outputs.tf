@@ -1,3 +1,3 @@
-output "eks" {
+output "output" {
     value = module.eks
 }
