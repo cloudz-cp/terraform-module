@@ -28,24 +28,24 @@ resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
-  name      = "aws-load-balancer-controller"
-  namespace = "kube-system"
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
 
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  version    = "1.4.4"
+    repository = "https://aws.github.io/eks-charts"
+    chart      = "aws-load-balancer-controller"
+    version    = "1.4.4"
 
-  values     = [
-    "${file("${path.module}/values/albc.yaml")}"
-  ]
+    values     = [
+        "${file("${path.module}/values/albc.yaml")}"
+    ]
 
-  set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
+    set {
+        name  = "clusterName"
+        value = var.cluster_name
+    }
 
-  set {
-    name  = "serviceAccount.name"
-    value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
-  }
+    set {
+        name  = "serviceAccount.name"
+        value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
+    }
 }
