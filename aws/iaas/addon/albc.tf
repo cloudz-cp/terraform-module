@@ -3,10 +3,11 @@
 */
 
 # https://github.com/terraform-aws-modules/terraform-aws-iam/blob/9210e6c6dc2bbd00065bc6f9212d04a0f49adec2/examples/iam-role-for-service-accounts-eks/main.tf#L184
+
 module "albc_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
-  role_name                              = "aws-load-balancer-controller"
+  role_name                              = format("aws-load-balancer-controller-%s", random_string.suffix.result)
   attach_load_balancer_controller_policy = true
 
   oidc_providers = {
@@ -41,11 +42,16 @@ resource "helm_release" "aws_load_balancer_controller" {
 
     set {
         name  = "clusterName"
-        value = var.cluster_name
+        value = var.eks.cluster_id
     }
 
     set {
         name  = "serviceAccount.name"
         value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
     }
+}
+
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
 }

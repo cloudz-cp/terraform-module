@@ -1,6 +1,6 @@
 locals {
-    eks_subnet_names = compact([for key, subnet in var.subnets : subnet.is_eks_subnet == true ? key : ""])
-    eks_subnet_cidrs = compact([for key, subnet in var.subnets : subnet.is_eks_subnet == true ? subnet.subnet_cidr : ""])
+    eks_subnet_names = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
+    eks_subnet_cidrs = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? subnet.subnet_cidr : ""])
 }
 
 data "aws_subnets" "eks_subnets" {
@@ -73,7 +73,7 @@ resource "aws_efs_backup_policy" "backup_policy" {
 }
 
 resource "aws_security_group" "security_group" {
-    name        = "eks-efs-sg-${var.cluster_name}"
+    name        = "eks-efs-sg-${var.eks.cluster_id}"
     description = "NFS access to EFS from EKS worker nodes"
     vpc_id      = var.vpc.vpc_id
 
@@ -93,7 +93,7 @@ resource "aws_security_group" "security_group" {
     }
 
     tags = {
-        Name        = "eks-efs-sg-${var.cluster_name}"
+        Name        = "eks-efs-sg-${var.eks.cluster_id}"
         Terraform   = "true"
         CreatedBy   = "zcp-mcm-provisioner"
     }
@@ -119,7 +119,7 @@ resource "aws_efs_mount_target" "mount_target" {
       local.subnet_fs
     ]
     
-    count = 4#length(local.subnet_fs)
+    count = 2#length(local.subnet_fs)
     subnet_id = local.subnet_fs[count.index].subnet_id
     file_system_id = local.subnet_fs[count.index].fs_id
     security_groups = [aws_security_group.security_group.id]

@@ -1,4 +1,3 @@
-variable cluster_name {}  
 variable vpc {}
 variable subnets {}
 variable aws_credentials {}
@@ -6,19 +5,20 @@ variable eks {}
 variable azs {}
 
 locals {
-    eks_subnets = compact([for key, subnet in var.subnets : subnet.is_eks_subnet == true ? key : ""])
-    pod_subnets = compact([for key, subnet in var.subnets : subnet.is_pod_subnet == true ? key : ""])
+    pod_subnet_az = {for key, subnet in var.subnets : key => subnet.az if subnet.subnet_type == "pod"}
 }
 
-data "aws_subnets" "pod_subnets" {
+data "aws_subnet" "pod_subnets" {
+    for_each    = local.pod_subnet_az
+    
     filter {
-        name   = "vpc-id"
-        values = [var.vpc.vpc_id]
+        name    = "vpc-id"
+        values  = [var.vpc.vpc_id]
     }
 
     filter {
         name = "tag:Name"
-        values = local.pod_subnets
+        values = [each.key]
     }
 }
 
@@ -29,12 +29,12 @@ resource "null_resource" "eniconfig" {
   
   provisioner "local-exec" {
     command = <<EOT
-        az1=$(echo ${var.azs[0]})
-        az2=$(echo ${var.azs[1]})
-        sub1=$(echo ${data.aws_subnets.pod_subnets.ids[0]})
-        sub2=$(echo ${data.aws_subnets.pod_subnets.ids[1]})
+        az1=$(echo ${local.pod_subnet_az[0].value})
+        az2=$(echo ${local.pod_subnet_az[1].value})
+        sub1=$(echo ${data.aws_subnet.pod_subnets[0].id})
+        sub2=$(echo ${data.aws_subnet.pod_subnets[1].id})
         sg=$(echo ${var.eks.cluster_primary_security_group_id})
-        cluster=$(echo ${var.cluster_name})
+        cluster=$(echo ${var.eks.cluster_id})
 
         echo $az1 $az2 $sub1 $sub2 $sg $cluster
         
@@ -54,10 +54,3 @@ resource "null_resource" "eniconfig" {
 }
 }
 
-resource "aws_eks_addon" "coredns" {
-  depends_on = [null_resource.eniconfig]
-
-  cluster_name = var.cluster_name
-  addon_name   = "coredns"
-  resolve_conflicts = "OVERWRITE"
-}

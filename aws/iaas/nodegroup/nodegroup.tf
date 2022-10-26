@@ -3,10 +3,9 @@ variable vpc {}
 variable eks {}
 variable subnets {}
 variable aws_credentials {}
-variable eks{}
 
 locals {
-    eks_subnets = compact([for key, subnet in var.subnets : subnet.is_eks_subnet == true ? key : ""])
+    eks_subnets = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
 }
 
 data "aws_subnets" "eks_subnets" {
@@ -32,13 +31,18 @@ data "aws_subnets" "eks_subnets" {
 }*/
 
 module "nodegroup" {
+    /*depends_on = [
+      aws_security_group.ssh
+    ]*/
     source = "terraform-aws-modules/eks/aws//modules/eks-managed-node-group"
-    version = "18.26.6"
+    version = "18.30.2"
     
-    for_each = var.nodegroup
-    cluster_name = var.eks.cluster_name
+    for_each    = var.nodegroup
+    cluster_name = var.eks.cluster_id
     name         = each.key
     vpc_id       = var.vpc.vpc_id
+    iam_role_arn = aws_iam_role.eks_ng_role.arn
+
     
     subnet_ids      = data.aws_subnets.eks_subnets.ids
 
@@ -54,21 +58,73 @@ module "nodegroup" {
     ami_type          = each.value["ami_type"]
     labels            = merge(each.value["node_labels"], tomap({ role = each.value["node_role"]}))
     tags              = each.value["node_tags"]
-
-    dynamic "remote_access" {
+    
+    /*dynamic "" {
         for_each = each.value["ssh"] != "" ? [{ec2_ssh_key = each.value["ssh"].public_key}] : []
-
         content {
             ec2_ssh_key               = remote_access.value["ec2_ssh_key"]
             source_security_group_ids = aws_security_group.nodegroup.*.id
         }
-    }
+    }*/
 
-    iam_role_additional_policies = concat([
+    create_iam_role = false
+
+    /*remote_access = each.value["ssh"].public_key != "" ? { 
+        ec2_ssh_key = each.value["ssh"].public_key
+        source_security_group_ids = aws_security_group.ssh.*.id
+    } : {}
+    */
+
+    /*iam_role_additional_policies = concat([
         "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
         "arn:aws:iam::aws:policy/AmazonS3FullAccess"
     ], each.value["attach_policy"])
+*/
+}
 
+resource "aws_iam_role" "eks_ng_role" {
+  name = "${var.eks.cluster_id}-eks-ng-role"
+
+  assume_role_policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_iam_role_policy_attachment" "ng_worker_policy" {
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+    role       = aws_iam_role.eks_ng_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ng_cni_policy" {
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+    role       = aws_iam_role.eks_ng_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ng_registry_policy" {
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+    role       = aws_iam_role.eks_ng_role.name
+}
+
+
+resource "aws_iam_role_policy_attachment" "ng_lb_access" {
+    policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+    role        = aws_iam_role.eks_ng_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ng_s3_access" {
+    policy_arn  = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+    role        = aws_iam_role.eks_ng_role.name
 }
 
 resource "null_resource" "node_labels" {
@@ -85,7 +141,7 @@ resource "null_resource" "node_labels" {
         export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
         export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
 
-        aws eks update-kubeconfig --name ${var.eks.cluster_name}
+        aws eks update-kubeconfig --name ${var.eks.cluster_id}
         kubectl label node -l role="${each.value["node_role"]}" node-role.kubernetes.io/${each.value["node_role"]}="${each.value["node_role"]}" --overwrite
         EOT
     }
@@ -93,8 +149,7 @@ resource "null_resource" "node_labels" {
 
 
 resource "aws_security_group" "ssh" {
-    count = var.nodegroup.ssh != "" ? 1 : 0 
-    name        = "${var.eks.cluster_name}-eks-nodegroup-ssh-sg"
+    name        = "${var.eks.cluster_id}-eks-nodegroup-ssh-sg"
     description = "Security group to access SSH"
     vpc_id      = var.vpc.vpc_id 
 
@@ -113,6 +168,15 @@ resource "aws_security_group" "ssh" {
     }
 
     tags = {
-        Name = "${var.eks.cluster_name}-eks-nodegroup-ssh-sg"
+        Name = "${var.eks.cluster_id}-eks-nodegroup-ssh-sg"
     }
+}
+
+resource "aws_eks_addon" "coredns" {
+    depends_on = [
+      module.nodegroup
+    ]
+    cluster_name = var.eks.cluster_id
+    addon_name   = "coredns"
+    resolve_conflicts = "OVERWRITE"
 }

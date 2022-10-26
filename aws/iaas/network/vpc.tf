@@ -1,8 +1,3 @@
-variable vpc {}
-variable cluster_name {}
-variable azs {}
-variable subnets {} 
-
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "3.14.2"

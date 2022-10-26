@@ -20,7 +20,7 @@ resource "aws_subnet" "eks" {
 
     tags = {
         Name = each.key
-        "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+        "kubernetes.io/cluster/${var.eks.name}" = "shared"
         (each.value["is_public"] == true ? local.public_tag_key : local.internal_tag_key) = 1
     }
 }
@@ -33,7 +33,7 @@ resource "aws_route_table" "public" {
         gateway_id = aws_internet_gateway.eks.id
     }
     tags = {
-        Name = format("%s-public-rt", var.cluster_name)
+        Name = format("%s-public-rt", var.eks.name)
     }
 }
 
@@ -47,7 +47,7 @@ resource "aws_route_table" "nat" {
     }
 
     tags = {
-        Name = format("%s-nat-rt", var.cluster_name)
+        Name = format("%s-nat-rt", var.eks.name)
     }
 
 }
@@ -70,7 +70,7 @@ resource "aws_internet_gateway" "eks" {
   vpc_id            = module.vpc.vpc_id
 
   tags = {
-    Name = format("%s-cluster-igw", var.cluster_name)
+    Name = format("%s-cluster-igw", var.eks.name)
   }
 }
 
@@ -79,7 +79,7 @@ resource "aws_eip" "eks" {
     vpc = true
 
     tags = {
-        Name = format("%s-cluster-eip",var.cluster_name)
+        Name = format("%s-cluster-eip",var.eks.name)
     }
 }
 

@@ -1,9 +1,8 @@
 variable vpc {}
-variable cluster_name {}
 variable azs {}
 
 locals {
-    vpc_name    = var.vpc_name == "" ? format("%s-eks-vpc", var.cluster_name) : var.cluster_name
+    vpc_name  = format("%s-eks-vpc", var.eks.name)
 }
 
 module "vpc" {
@@ -22,12 +21,12 @@ module "vpc" {
   enable_dns_hostnames  = true
 
   public_subnet_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${var.eks.name}" = "shared"
     "kubernetes.io/role/elb"                      = 1
   }
 
   private_subnet_tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/cluster/${var.eks.name}" = "shared"
     "kubernetes.io/role/internal-elb"             = 1
   }
 
