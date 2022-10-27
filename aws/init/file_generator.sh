@@ -4,34 +4,38 @@ count=$1
 output_path=$2
 
 cat <<EOF > ${output_path}/efs.yaml
+# Default values for aws-efs-csi-driver.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
 nameOverride: ""
 fullnameOverride: ""
 
 replicaCount: 2
 
 image:
-repository: amazon/aws-efs-csi-driver
-tag: "v1.3.6"
-pullPolicy: IfNotPresent
+  repository: amazon/aws-efs-csi-driver
+  tag: "v1.3.6"
+  pullPolicy: IfNotPresent
 
 sidecars:
-livenessProbe:
+  livenessProbe:
     image:
-    repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
-    tag: v2.2.0-eks-1-18-2
-    pullPolicy: IfNotPresent
+      repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
+      tag: v2.2.0-eks-1-18-2
+      pullPolicy: IfNotPresent
     resources: {}
-nodeDriverRegistrar:
+  nodeDriverRegistrar:
     image:
-    repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
-    tag: v2.1.0-eks-1-18-2
-    pullPolicy: IfNotPresent
+      repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
+      tag: v2.1.0-eks-1-18-2
+      pullPolicy: IfNotPresent
     resources: {}
-csiProvisioner:
+  csiProvisioner:
     image:
-    repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
-    tag: v2.1.1-eks-1-18-2
-    pullPolicy: IfNotPresent
+      repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+      tag: v2.1.1-eks-1-18-2
+      pullPolicy: IfNotPresent
     resources: {}
 
 imagePullSecrets: []
@@ -39,22 +43,22 @@ imagePullSecrets: []
 ## Controller deployment variables
 
 controller:
-# Specifies whether a deployment should be created
-create: true
-# Number for the log level verbosity
-logLevel: 2
-# If set, add pv/pvc metadata to plugin create requests as parameters.
-extraCreateMetadata: true
-# Add additional tags to access points
-tags:
+  # Specifies whether a deployment should be created
+  create: true
+  # Number for the log level verbosity
+  logLevel: 2
+  # If set, add pv/pvc metadata to plugin create requests as parameters.
+  extraCreateMetadata: true
+  # Add additional tags to access points
+  tags:
     {}
     # environment: prod
     # region: us-east-1
-# Enable if you want the controller to also delete the
-# path on efs when deleteing an access point
-deleteAccessPointRootDir: false
-podAnnotations: {}
-resources:
+  # Enable if you want the controller to also delete the
+  # path on efs when deleteing an access point
+  deleteAccessPointRootDir: false
+  podAnnotations: {}
+  resources:
     {}
     # We usually recommend not to specify default resources and to leave this as a conscious
     # choice for the user. This also increases chances charts run on environments with little
@@ -66,22 +70,22 @@ resources:
     # requests:
     #   cpu: 100m
     #   memory: 128Mi
-nodeSelector: {}
-tolerations: []
-affinity: {}
-# Specifies whether a service account should be created
-serviceAccount:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  # Specifies whether a service account should be created
+  serviceAccount:
     create: false
     name: efs-csi-controller-sa
     annotations: {}
-healthPort: 9909
+  healthPort: 9909
 
 ## Node daemonset variables
 
 node:
-# Number for the log level verbosity
-logLevel: 2
-hostAliases:
+  # Number for the log level verbosity
+  logLevel: 2
+  hostAliases:
     {}
     # For cross VPC EFS, you need to poison or overwrite the DNS for the efs volume as per
     # https://docs.aws.amazon.com/efs/latest/ug/efs-different-vpc.html#wt6-efs-utils-step3
@@ -91,16 +95,16 @@ hostAliases:
     # "fs-01234567":
     #   ip: 10.10.2.2
     #   region: us-east-2
-dnsPolicy: ClusterFirst
-dnsConfig:
+  dnsPolicy: ClusterFirst
+  dnsConfig:
     {}
     # Example config which uses the AWS nameservers
     # dnsPolicy: "None"
     # dnsConfig:
     #   nameservers:
     #     - 169.254.169.253
-podAnnotations: {}
-resources:
+  podAnnotations: {}
+  resources:
     {}
     # limits:
     #   cpu: 100m
@@ -108,17 +112,17 @@ resources:
     # requests:
     #   cpu: 100m
     #   memory: 128Mi
-nodeSelector: {}
-tolerations:
+  nodeSelector: {}
+  tolerations:
     - operator: Exists
-# Specifies whether a service account should be created
-serviceAccount:
+  # Specifies whether a service account should be created
+  serviceAccount:
     create: true
     name: efs-csi-node-sa
     annotations: {}
     ## Enable if EKS IAM for SA is used
     #  eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/efs-csi-role
-healthPort: 9809
+  healthPort: 9809
 
 storageClasses:
 EOF

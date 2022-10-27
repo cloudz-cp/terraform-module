@@ -6,6 +6,7 @@ variable azs {}
 
 locals {
     pod_subnet_az = {for key, subnet in var.subnets : key => subnet.az if subnet.subnet_type == "pod"}
+    pod_subnet_keys = keys(local.pod_subnet_az)
 }
 
 data "aws_subnet" "pod_subnets" {
@@ -29,10 +30,10 @@ resource "null_resource" "eniconfig" {
   
   provisioner "local-exec" {
     command = <<EOT
-        az1=$(echo ${local.pod_subnet_az[0].value})
-        az2=$(echo ${local.pod_subnet_az[1].value})
-        sub1=$(echo ${data.aws_subnet.pod_subnets[0].id})
-        sub2=$(echo ${data.aws_subnet.pod_subnets[1].id})
+        az1=$(echo ${local.pod_subnet_az[local.pod_subnet_keys[0]]})
+        az2=$(echo ${local.pod_subnet_az[local.pod_subnet_keys[1]]})
+        sub1=$(echo ${data.aws_subnet.pod_subnets[local.pod_subnet_keys[0]].id})
+        sub2=$(echo ${data.aws_subnet.pod_subnets[local.pod_subnet_keys[1]].id})
         sg=$(echo ${var.eks.cluster_primary_security_group_id})
         cluster=$(echo ${var.eks.cluster_id})
 

@@ -31,7 +31,7 @@ resource "helm_release" "aws_ebs_csi_driver" {
   version    = "2.10.0"
 
   values = [
-    "${file("${path.module}/values/ebs.yaml")}"
+    "${file("helm_values/ebs.yaml")}"
   ]
 
   set {

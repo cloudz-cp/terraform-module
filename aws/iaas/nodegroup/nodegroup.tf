@@ -69,11 +69,14 @@ module "nodegroup" {
 
     create_iam_role = false
 
-    /*remote_access = each.value["ssh"].public_key != "" ? { 
-        ec2_ssh_key = each.value["ssh"].public_key
+    remote_access = each.value["ssh"].public_key != "" ? { 
+        ec2_ssh_key = each.value["ssh"].public_key 
         source_security_group_ids = aws_security_group.ssh.*.id
-    } : {}
-    */
+    } : {
+        ec2_ssh_key = null 
+        source_security_group_ids = []
+    }
+    
 
     /*iam_role_additional_policies = concat([
         "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",

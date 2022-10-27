@@ -119,7 +119,7 @@ resource "aws_efs_mount_target" "mount_target" {
       local.subnet_fs
     ]
     
-    count = 2#length(local.subnet_fs)
+    count = var.efs_count#length(local.subnet_fs)
     subnet_id = local.subnet_fs[count.index].subnet_id
     file_system_id = local.subnet_fs[count.index].fs_id
     security_groups = [aws_security_group.security_group.id]

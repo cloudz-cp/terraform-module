@@ -35,7 +35,7 @@ resource "helm_release" "aws_efs_csi_driver" {
     version    = "2.2.7"
 
     values = [
-        "${file("config/efs.yaml")}"
+        "${file("helm_values/efs.yaml")}"
     ]
 
     set {

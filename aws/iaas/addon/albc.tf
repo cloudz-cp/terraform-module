@@ -37,7 +37,7 @@ resource "helm_release" "aws_load_balancer_controller" {
     version    = "1.4.4"
 
     values     = [
-        "${file("${path.module}/values/albc.yaml")}"
+        "${file("helm_values/albc.yaml")}"
     ]
 
     set {
