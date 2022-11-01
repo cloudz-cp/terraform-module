@@ -3,30 +3,33 @@ locals {
 }
 
 module "efs_csi_irsa_role" {
-  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+    source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+    count = var.addon_selected.efs ? 1 :0
+    role_name = format("%s-efs-csi", var.eks.cluster_id)
+    attach_efs_csi_policy = true
 
-  role_name = "efs-csi"
-  attach_efs_csi_policy = true
-
-  oidc_providers = {
-    main = {
-      provider_arn               = var.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
+    oidc_providers = {
+        main = {
+        provider_arn               = var.eks.oidc_provider_arn
+        namespace_service_accounts = ["kube-system:efs-csi-controller-sa"]
+        }
     }
-  }
 }
 
 resource "kubernetes_service_account" "efs_csi_controller_sa" {
+    count = var.addon_selected.efs ? 1 : 0
     metadata {
         name = "efs-csi-controller-sa"
         namespace = "kube-system"
         annotations = {
-            "eks.amazonaws.com/role-arn" = module.efs_csi_irsa_role.iam_role_arn
+            "eks.amazonaws.com/role-arn" = module.efs_csi_irsa_role[0].iam_role_arn
         }
     }
 }
 
 resource "helm_release" "aws_efs_csi_driver" {
+    count = var.addon_selected.efs ? 1 : 0
+
     name      = "aws-efs-csi-driver"
     namespace = "kube-system"
 
@@ -40,7 +43,7 @@ resource "helm_release" "aws_efs_csi_driver" {
 
     set {
         name  = "controller.serviceAccount.name"
-        value = kubernetes_service_account.efs_csi_controller_sa.metadata[0].name
+        value = kubernetes_service_account.efs_csi_controller_sa[0].metadata[0].name
     }
 
     ///// fill the filesystemId in efs.yaml 

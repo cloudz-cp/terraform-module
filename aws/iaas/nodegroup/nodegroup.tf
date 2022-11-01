@@ -1,24 +1,8 @@
 variable nodegroup {}
 variable vpc {}
 variable eks {}
-variable subnets {}
 variable aws_credentials {}
-
-locals {
-    eks_subnets = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
-}
-
-data "aws_subnets" "eks_subnets" {
-    filter {
-        name   = "vpc-id"
-        values = [var.vpc.vpc_id]
-    }
-    filter {
-        name = "tag:Name"
-        values = local.eks_subnets
-    }
-}
-
+variable eks_subnet_ids {}
 /*data "aws_security_groups" "select_cluster" {
     filter {
         name   = "vpc-id"
@@ -44,7 +28,7 @@ module "nodegroup" {
     iam_role_arn = aws_iam_role.eks_ng_role.arn
 
     
-    subnet_ids      = data.aws_subnets.eks_subnets.ids
+    subnet_ids      = var.eks_subnet_ids
 
     cluster_primary_security_group_id = var.eks.cluster_primary_security_group_id
     cluster_security_group_id         = var.eks.node_security_group_id
@@ -59,13 +43,6 @@ module "nodegroup" {
     labels            = merge(each.value["node_labels"], tomap({ role = each.value["node_role"]}))
     tags              = each.value["node_tags"]
     
-    /*dynamic "" {
-        for_each = each.value["ssh"] != "" ? [{ec2_ssh_key = each.value["ssh"].public_key}] : []
-        content {
-            ec2_ssh_key               = remote_access.value["ec2_ssh_key"]
-            source_security_group_ids = aws_security_group.nodegroup.*.id
-        }
-    }*/
 
     create_iam_role = false
 
@@ -77,12 +54,6 @@ module "nodegroup" {
         source_security_group_ids = []
     }
     
-
-    /*iam_role_additional_policies = concat([
-        "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
-        "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-    ], each.value["attach_policy"])
-*/
 }
 
 resource "aws_iam_role" "eks_ng_role" {

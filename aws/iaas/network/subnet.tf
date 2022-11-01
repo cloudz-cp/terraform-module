@@ -4,14 +4,15 @@ locals {
     subnet_key          = keys(var.subnets)
     public_subnets      = compact([for key, subnet in var.subnets : subnet.is_public == true ? key : ""])   
     eks_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
-    nat_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "nat" ? key : ""])   
+    nat_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "nat" ? key : ""])
+    pod_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "pod" ? key : ""])    
+    subnets             = aws_subnet.eks
 }
 
 resource "aws_subnet" "eks" {
     depends_on = [
         module.vpc
     ]
-    
     for_each = var.subnets
     vpc_id = module.vpc.vpc_id
 
@@ -52,15 +53,16 @@ resource "aws_route_table" "nat" {
 
 }
 
-
+// public subnet들과 resource.aws_route_table.public table연결 
 resource "aws_route_table_association" "public_igw" {
     count = length(local.public_subnets)
     subnet_id  = aws_subnet.eks[local.public_subnets[count.index]].id
     route_table_id = aws_route_table.public.id
 }
 
+// eks subnet들과 resource.aws_route_table.nat table연결 
 resource "aws_route_table_association" "eks_nat" {
-    count = length(local.eks_subnets)
+    count = length(local.eks_subnets) > 0 && length(aws_route_table.nat) > 0 ? length(local.eks_subnets) : 0
     subnet_id  = aws_subnet.eks[local.eks_subnets[count.index]].id
     route_table_id = aws_route_table.nat[count.index].id
 }
@@ -75,7 +77,7 @@ resource "aws_internet_gateway" "eks" {
 }
 
 resource "aws_eip" "eks" {
-    count = length(var.azs)
+    count = length(setintersection(local.public_subnets, local.nat_subnets))>0 ? length(var.azs) :0
     vpc = true
 
     tags = {
@@ -89,7 +91,7 @@ resource "aws_nat_gateway" "eks" {
     subnet_id     = aws_subnet.eks[local.nat_subnets[count.index]].id
 
     tags = {
-        Name = "gw NAT"
+        Name =  local.nat_subnets[count.index]
     }
     depends_on = [aws_internet_gateway.eks]
 }

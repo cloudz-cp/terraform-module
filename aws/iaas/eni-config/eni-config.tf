@@ -1,27 +1,9 @@
 variable vpc {}
-variable subnets {}
 variable aws_credentials {}
 variable eks {}
 variable azs {}
-
-locals {
-    pod_subnet_az = {for key, subnet in var.subnets : key => subnet.az if subnet.subnet_type == "pod"}
-    pod_subnet_keys = keys(local.pod_subnet_az)
-}
-
-data "aws_subnet" "pod_subnets" {
-    for_each    = local.pod_subnet_az
-    
-    filter {
-        name    = "vpc-id"
-        values  = [var.vpc.vpc_id]
-    }
-
-    filter {
-        name = "tag:Name"
-        values = [each.key]
-    }
-}
+variable pod_subnet_ids {}
+variable pod_subnet_az {}
 
 resource "null_resource" "eniconfig" {
   triggers = {
@@ -30,10 +12,10 @@ resource "null_resource" "eniconfig" {
   
   provisioner "local-exec" {
     command = <<EOT
-        az1=$(echo ${local.pod_subnet_az[local.pod_subnet_keys[0]]})
-        az2=$(echo ${local.pod_subnet_az[local.pod_subnet_keys[1]]})
-        sub1=$(echo ${data.aws_subnet.pod_subnets[local.pod_subnet_keys[0]].id})
-        sub2=$(echo ${data.aws_subnet.pod_subnets[local.pod_subnet_keys[1]].id})
+        az1=$(echo ${var.pod_subnet_az[0]})
+        az2=$(echo ${var.pod_subnet_az[1]})
+        sub1=$(echo ${var.pod_subnet_ids[0]})
+        sub2=$(echo ${var.pod_subnet_ids[1]})
         sg=$(echo ${var.eks.cluster_primary_security_group_id})
         cluster=$(echo ${var.eks.cluster_id})
 

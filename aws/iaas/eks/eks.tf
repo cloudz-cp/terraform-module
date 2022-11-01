@@ -1,12 +1,12 @@
 variable eks {}
 variable vpc {}
 variable azs {}
-variable subnets {}
 variable aws_credentials {}
+variable eks_subnet_ids {}
+
 
 locals {
-    eks_subnets = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
-    pod_subnets = compact([for key, subnet in var.subnets : subnet.subnet_type == "pod" ? key : ""])
+    logkeys = [for k,v in tomap(var.eks.log_type) : k if v == true]
 }
 
 resource "aws_iam_role" "cluster" {
@@ -50,44 +50,16 @@ resource "aws_iam_role_policy_attachment" "attach_policy" {
 }
 
 
-data "aws_subnets" "eks_subnets" {
-    filter {
-        name   = "vpc-id"
-        values = [var.vpc.vpc_id]
-    }
-    filter {
-        name = "tag:Name"
-        values = local.eks_subnets
-    }
-}
-
-data "aws_subnets" "pod_subnets" {
-    filter {
-        name   = "vpc-id"
-        values = [var.vpc.vpc_id]
-    }
-
-    filter {
-        name = "tag:Name"
-        values = local.eks_subnets
-    }
-}
-
 module "eks" {    
-   /* depends_on = [
-        aws_iam_role_policy_attachment.cluster-AmazonEKSClusterPolicy,
-        aws_iam_role_policy_attachment.cluster-AmazonEKSServicePolicy    
-    ]*/
-
     source  = "terraform-aws-modules/eks/aws"
     version = "18.26.6"
 
     cluster_name    = var.eks.name
     cluster_version = var.eks.version
-    iam_role_arn = aws_iam_role.cluster.arn
+    iam_role_arn    = aws_iam_role.cluster.arn
 
     vpc_id          = var.vpc.vpc_id
-    subnet_ids      = data.aws_subnets.eks_subnets.ids
+    subnet_ids      = var.eks_subnet_ids
 
     cluster_endpoint_private_access = var.eks.private_access
     cluster_endpoint_public_access  = var.eks.public_access
@@ -105,7 +77,7 @@ module "eks" {
         }
     }
     //iam_role_additional_policies = ["arn:aws:iam::aws:policy/AmazonEKSClusterPolicy", "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"]
-
+    cluster_enabled_log_types = local.logkeys
     tags = var.eks.tags
 }
 

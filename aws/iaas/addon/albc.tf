@@ -6,8 +6,9 @@
 
 module "albc_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+    count = var.addon_selected.albc ? 1 : 0
 
-  role_name                              = format("aws-load-balancer-controller-%s", random_string.suffix.result)
+  role_name                      = format("aws-load-balancer-controller-%s", random_string.suffix.result)
   attach_load_balancer_controller_policy = true
 
   oidc_providers = {
@@ -19,16 +20,18 @@ module "albc_irsa_role" {
 }
 
 resource "kubernetes_service_account" "aws_load_balancer_controller_sa" {
-  metadata {
-    name        = "aws-load-balancer-controller-sa"
-    namespace   = "kube-system"
-    annotations = {
-      "eks.amazonaws.com/role-arn" = module.albc_irsa_role.iam_role_arn
+    count = var.addon_selected.albc ? 1 : 0
+    metadata {
+        name        = "aws-load-balancer-controller-sa"
+        namespace   = "kube-system"
+        annotations = {
+            "eks.amazonaws.com/role-arn" = module.albc_irsa_role[0].iam_role_arn
+        }
     }
-  }
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
+    count = var.addon_selected.albc ? 1 : 0
     name      = "aws-load-balancer-controller"
     namespace = "kube-system"
 
@@ -47,7 +50,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
     set {
         name  = "serviceAccount.name"
-        value = kubernetes_service_account.aws_load_balancer_controller_sa.metadata[0].name
+        value = kubernetes_service_account.aws_load_balancer_controller_sa[0].metadata[0].name
     }
 }
 

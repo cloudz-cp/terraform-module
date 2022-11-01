@@ -1,20 +1,3 @@
-locals {
-    eks_subnet_names = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
-    eks_subnet_cidrs = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? subnet.subnet_cidr : ""])
-}
-
-data "aws_subnets" "eks_subnets" {
-    filter {
-        name   = "vpc-id"
-        values = [var.vpc.vpc_id]
-    }
-    filter {
-        name = "tag:Name"
-        values = local.eks_subnet_names
-    }
-}
-
-
 resource  "aws_efs_file_system" "filesystem" {
     for_each = var.efs
     encrypted = true
@@ -27,7 +10,7 @@ resource  "aws_efs_file_system" "filesystem" {
 
 resource "aws_efs_access_point" "efs_access_point" {
     depends_on = [
-      aws_efs_file_system.filesystem
+        aws_efs_file_system.filesystem
     ]
 
     #for_each = var.efs
@@ -82,7 +65,7 @@ resource "aws_security_group" "security_group" {
         from_port   = 2049
         to_port     = 2049
         protocol    = "tcp"
-        cidr_blocks = local.eks_subnet_cidrs
+        cidr_blocks = var.eks_subnet_cidr //data.aws_subnet.eks_subnets.*.cidr_block
     }
 
     egress {
@@ -106,7 +89,7 @@ locals {
         v.id
     ]
     subnet_fs = [
-        for pair in setproduct(local.fs_ids, data.aws_subnets.eks_subnets.ids) : {
+        for pair in setproduct(local.fs_ids, var.eks_subnet_ids) : {
             fs_id  = pair[0]
             subnet_id = pair[1]
         }
