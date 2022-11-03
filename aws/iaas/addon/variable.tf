@@ -4,6 +4,7 @@ variable vpc {}
 variable s3 {}
 variable aws_credentials {}
 variable efs_count {}
+variable s3_count {}
 variable eks_subnet_ids {}
 variable eks_subnet_cidr {}
 variable addon_selected {}

@@ -43,7 +43,7 @@ resource "helm_release" "vmware-tanzu2" {
 
   set {
     name  = "configuration.backupStorageLocation.bucket"
-    value = "velero-s3-registry"
+    value = format("%s-velero-s3-registry", var.eks.cluster_id)
   }
 
   set {
