@@ -12,6 +12,11 @@ provider "kubernetes" {
         api_version = "client.authentication.k8s.io/v1beta1"
         args        = ["--region", var.aws_credentials.aws_region, "eks", "get-token", "--cluster-name", var.eks.cluster_id]
         command     = "aws"
+        env = {
+            AWS_ACCESS_KEY_ID=var.aws_credentials.aws_access_key
+            AWS_SECRET_ACCESS_KEY = var.aws_credentials.aws_secret_key
+            AWS_SESSION_TOKEN = var.aws_credentials.aws_session_token
+        }
     }
 }
 

@@ -24,7 +24,6 @@ resource "null_resource" "eniconfig" {
         export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
         export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
         export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
-        export AWS_ROLE_ARN=${var.aws_credentials.aws_role_arn}
 
         aws eks update-kubeconfig --name $cluster
         kubectl set env daemonset aws-node -n kube-system AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true

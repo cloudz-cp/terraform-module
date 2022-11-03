@@ -27,11 +27,11 @@ module "nodegroup" {
     vpc_id       = var.vpc.vpc_id
     iam_role_arn = aws_iam_role.eks_ng_role.arn
 
-    
+    create_security_group = false
     subnet_ids      = var.eks_subnet_ids
 
     cluster_primary_security_group_id = var.eks.cluster_primary_security_group_id
-    cluster_security_group_id         = var.eks.node_security_group_id
+    #cluster_security_group_id         = var.eks.node_security_group_id
 
     desired_size      = each.value["pool_size"]
     max_size          = each.value["max_size"]
@@ -53,6 +53,7 @@ module "nodegroup" {
         ec2_ssh_key = null 
         source_security_group_ids = []
     }
+    vpc_security_group_ids = [var.eks.node_security_group_id]
     
 }
 

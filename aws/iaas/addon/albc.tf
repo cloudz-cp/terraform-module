@@ -8,7 +8,7 @@ module "albc_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
     count = var.addon_selected.albc ? 1 : 0
 
-  role_name                      = format("aws-load-balancer-controller-%s", random_string.suffix.result)
+  role_name                      = format("%s-aws-load-balancer-controller", var.eks.cluster_id)
   attach_load_balancer_controller_policy = true
 
   oidc_providers = {

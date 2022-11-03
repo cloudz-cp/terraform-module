@@ -49,7 +49,6 @@ resource "aws_iam_role_policy_attachment" "attach_policy" {
     role = aws_iam_role.cluster.name
 }
 
-
 module "eks" {    
     source  = "terraform-aws-modules/eks/aws"
     version = "18.26.6"

@@ -86,6 +86,8 @@ resource "aws_eip" "eks" {
 }
 
 resource "aws_nat_gateway" "eks" {
+    depends_on = [aws_internet_gateway.eks]
+
     count = length(local.nat_subnets)
     allocation_id = aws_eip.eks[count.index].id
     subnet_id     = aws_subnet.eks[local.nat_subnets[count.index]].id
@@ -93,5 +95,4 @@ resource "aws_nat_gateway" "eks" {
     tags = {
         Name =  local.nat_subnets[count.index]
     }
-    depends_on = [aws_internet_gateway.eks]
 }
