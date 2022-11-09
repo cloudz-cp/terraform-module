@@ -32,7 +32,7 @@ resource "null_resource" "eniconfig" {
         ${path.module}/setup_eniconfig.sh $az1 $sub1 $sg ${path.module}
         ${path.module}/setup_eniconfig.sh $az2 $sub2 $sg ${path.module}
         kubectl apply -f ${path.module}/eni-config/eniconfig.yaml
-  EOT
+    EOT
 }
 }
 

@@ -31,6 +31,36 @@ data "aws_subnets" "pod_subnets" {
         values = local.pod_subnets
     }
 }
+
+data "aws_subnets" "public_lb" {
+    depends_on = [
+      aws_subnet.eks
+    ]
+    filter {
+        name   = "vpc-id"
+        values = [module.vpc.vpc_id]
+    }
+
+    filter {
+        name = "tag:Name"
+        values = local.public_lb_subnets
+    }
+}
+
+data "aws_subnets" "private_lb" {
+    depends_on = [
+      aws_subnet.eks
+    ]
+    filter {
+        name   = "vpc-id"
+        values = [module.vpc.vpc_id]
+    }
+
+    filter {
+        name = "tag:Name"
+        values = local.private_lb_subnets
+    }
+}
 /*
 data "aws_subnet" "eks" {
     depends_on = [
@@ -79,3 +109,10 @@ output "pod_subnet_az" {
     value = compact([for subnet in toset(data.aws_subnets.pod_subnets.ids) : contains(local.ids, subnet) ? local.subnets[local.subnet_keys[index(local.ids, subnet)]].availability_zone : ""])
 }
 
+output "public_lb_subnet_ids" {
+    value = compact([for subnet in toset(data.aws_subnets.public_lb.ids) : contains(local.ids, subnet) ? subnet : ""])
+}
+
+output "private_lb_subnet_ids" {
+    value = compact([for subnet in toset(data.aws_subnets.private_lb.ids) : contains(local.ids, subnet) ? subnet : ""])
+}

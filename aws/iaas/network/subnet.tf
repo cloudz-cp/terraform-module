@@ -5,7 +5,9 @@ locals {
     public_subnets      = compact([for key, subnet in var.subnets : subnet.is_public == true ? key : ""])   
     eks_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "eks" ? key : ""])
     nat_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "nat" ? key : ""])
-    pod_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "pod" ? key : ""])    
+    pod_subnets         = compact([for key, subnet in var.subnets : subnet.subnet_type == "pod" ? key : ""])  
+    public_lb_subnets   = compact([for key, subnet in var.subnets : subnet.subnet_type == "lb" && subnet.is_public ? key : ""])
+    private_lb_subnets  = compact([for key, subnet in var.subnets : subnet.subnet_type == "lb" && !subnet.is_public ? key : ""])  
     subnets             = aws_subnet.eks
 }
 
@@ -22,7 +24,7 @@ resource "aws_subnet" "eks" {
     tags = {
         Name = each.key
         "kubernetes.io/cluster/${var.eks.name}" = "shared"
-        (each.value["is_public"] == true ? local.public_tag_key : local.internal_tag_key) = 1
+        //(each.value["is_public"] == true ? local.public_tag_key : local.internal_tag_key) = 1
     }
 }
 
@@ -64,7 +66,7 @@ resource "aws_route_table_association" "public_igw" {
 resource "aws_route_table_association" "eks_nat" {
     count = length(local.eks_subnets) > 0 && length(aws_route_table.nat) > 0 ? length(local.eks_subnets) : 0
     subnet_id  = aws_subnet.eks[local.eks_subnets[count.index]].id
-    route_table_id = aws_route_table.nat[count.index].id
+    route_table_id = var.vpc.single_nat_gateway? aws_route_table.nat[0].id : aws_route_table.nat[count.index].id
 }
 
 
@@ -77,7 +79,7 @@ resource "aws_internet_gateway" "eks" {
 }
 
 resource "aws_eip" "eks" {
-    count = length(setintersection(local.public_subnets, local.nat_subnets))>0 ? length(var.azs) :0
+    count = length(setintersection(local.public_subnets, local.nat_subnets))>0 ? (var.vpc.single_nat_gateway ? 1 : length(var.azs)) :0
     vpc = true
 
     tags = {
@@ -88,11 +90,28 @@ resource "aws_eip" "eks" {
 resource "aws_nat_gateway" "eks" {
     depends_on = [aws_internet_gateway.eks]
 
-    count = length(local.nat_subnets)
+    count = var.vpc.single_nat_gateway? 1: length(local.nat_subnets)
     allocation_id = aws_eip.eks[count.index].id
     subnet_id     = aws_subnet.eks[local.nat_subnets[count.index]].id
 
     tags = {
         Name =  local.nat_subnets[count.index]
     }
+}
+
+resource "null_resource" "subnet_start" {
+  depends_on = [null_resource.vpc_completed]
+
+  provisioner "local-exec" {
+  command = "echo Network - Subnet Installation  : Start  >> logs/process.log"
+  }
+}
+
+
+resource "null_resource" "subnet_completed" {
+  depends_on = [aws_subnet.eks]
+
+  provisioner "local-exec" {
+  command = "echo  Network - Subnet Installation : Completed  >> logs/process.log"
+  }
 }

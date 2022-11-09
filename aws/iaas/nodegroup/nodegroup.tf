@@ -155,3 +155,21 @@ resource "aws_eks_addon" "coredns" {
     addon_name   = "coredns"
     resolve_conflicts = "OVERWRITE"
 }
+
+
+resource "null_resource" "node_start" {
+  depends_on = [aws_iam_role.eks_ng_role]
+
+  provisioner "local-exec" {
+  command = "echo EKS - Nodegroup Installation : Start >> logs/process.log"
+  }
+}
+
+
+resource "null_resource" "node_completed" {
+  depends_on = [module.nodegroup]
+
+  provisioner "local-exec" {
+  command = "echo EKS - Nodegroup Installation : Completed >> logs/process.log"
+  }
+}

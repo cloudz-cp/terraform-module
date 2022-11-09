@@ -8,3 +8,7 @@ variable s3_count {}
 variable eks_subnet_ids {}
 variable eks_subnet_cidr {}
 variable addon_selected {}
+variable private_lb_subnet_ids {}
+variable public_lb_subnet_ids {}
+variable public_lb_count {}
+variable private_lb_count {}

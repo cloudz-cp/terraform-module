@@ -26,3 +26,21 @@ resource "helm_release" "metric-server" {
         value = true
     }
 }
+
+
+resource "null_resource" "metric-server_start" {
+
+  provisioner "local-exec" {
+  command = "echo ADD-ON -  Metric-server Installation : Start >> logs/process.log"
+  }
+}
+
+
+resource "null_resource" "metric-server_completed" {
+
+  depends_on = [helm_release.metric-server]
+
+  provisioner "local-exec" {
+  command = "echo ADD-ON - Metric-server Installation : Completed  >> logs/process.log"
+  }
+}

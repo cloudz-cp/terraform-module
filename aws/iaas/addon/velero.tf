@@ -3,7 +3,7 @@ module "velero_irsa_role"{
 
   role_name     = format("%s-velero", var.eks.cluster_id)
   attach_velero_policy = true
-  velero_s3_bucket_arns = ["arn:aws:s3:::${format("%s-velero-s3-registry", var.eks.cluster_id)}/*"]
+  velero_s3_bucket_arns = ["arn:aws:s3:::${format("%s-velero-s3-registry", var.eks.cluster_id)}"]
 
   oidc_providers = {
     main = {
@@ -21,7 +21,31 @@ resource "kubernetes_service_account" "velero_controller_sa" {
       "eks.amazonaws.com/role-arn" = module.velero_irsa_role.iam_role_arn
     }
   }
-}
+}/*
+resource "null_resource" "velero-controller-sa" {
+    depends_on = [
+        module.efs_csi_irsa_role
+    ]
+    provisioner "local-exec" {
+        command = <<EOT
+        export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
+        export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
+        export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
+        aws eks update-kubeconfig --name ${var.eks.cluster_id}
+
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        automountServiceAccountToken: true
+        kind: ServiceAccount
+        metadata:
+        annotations:
+            eks.amazonaws.com/role-arn: ${module.velero_irsa_role.iam_role_arn}
+        name: velero-controller-sa
+        namespace: kube-system
+        EOF
+        EOT
+    } 
+}*/
 
 
 resource "helm_release" "vmware-tanzu2" {
@@ -63,7 +87,7 @@ resource "helm_release" "vmware-tanzu2" {
 
   set {
     name  = "serviceAccount.server.name"
-    value = kubernetes_service_account.velero_controller_sa.metadata[0].name
+    value = "velero-controller-sa"
   }
 
   set {
@@ -83,5 +107,47 @@ resource "helm_release" "vmware-tanzu2" {
 
 }
 
+/*resource "kubernetes_manifest" "test" {
+    depends_on = [
+        helm_release.vmware-tanzu2
+    ]
+    manifest = {
+        "apiVersion" = "velero.io/v1"
+        "kind" = "Schedule"
+        "metadata" = {
+            "name" = "all-daily"
+            "namespace" = "kube-system"
+        }
+        "spec" = {
+            "schedule" = "0 2 * * *"
+            "template" = {
+                "includedNamespaces" = ["*"]
+                "ttl" = "720h0m0s"
+            }
+            "useOwnerReferencesInBackup"= false
+        }
+    }
+
+    wait {
+        fields = {
+            "status.phase" = "Enabled"
+        }
+    }
+}*/
+
+resource "null_resource" "velero_started" {
+
+  provisioner "local-exec" {
+  command = "echo ADD-ON - Velero Installation : Start >> logs/process.log"
+  }
+}
 
 
+resource "null_resource" "velero_completed" {
+
+  depends_on = [helm_release.vmware-tanzu2]
+
+  provisioner "local-exec" {
+  command = "echo ADD-ON - Velero Installation : Completed  >> logs/process.log"
+  }
+}

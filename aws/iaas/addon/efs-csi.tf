@@ -27,6 +27,31 @@ resource "kubernetes_service_account" "efs_csi_controller_sa" {
     }
 }
 
+/*resource "null_resource" "efs-controller-sa" {
+    depends_on = [
+        module.efs_csi_irsa_role
+    ]
+    provisioner "local-exec" {
+        command = <<EOT
+        export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
+        export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
+        export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
+        aws eks update-kubeconfig --name ${var.eks.cluster_id}
+
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        automountServiceAccountToken: true
+        kind: ServiceAccount
+        metadata:
+        annotations:
+            eks.amazonaws.com/role-arn: ${module.efs_csi_irsa_role[0].iam_role_arn}
+        name: efs-csi-controller-sa
+        namespace: kube-system
+        EOF
+        EOT
+    } 
+}*/
+
 resource "helm_release" "aws_efs_csi_driver" {
     count = var.addon_selected.efs ? 1 : 0
 
@@ -43,7 +68,7 @@ resource "helm_release" "aws_efs_csi_driver" {
 
     set {
         name  = "controller.serviceAccount.name"
-        value = kubernetes_service_account.efs_csi_controller_sa[0].metadata[0].name
+        value = "efs-csi-controller-sa"
     }
 
     ///// fill the filesystemId in efs.yaml 
@@ -92,3 +117,19 @@ resource "helm_release" "aws_efs_csi_driver" {
 }
 
 
+resource "null_resource" "efs_start" {
+
+    provisioner "local-exec" {
+    command = "echo ADD-ON - EFS Installation : Start >> logs/process.log"
+  }
+}
+
+
+resource "null_resource" "efs_completed" {
+
+  depends_on = [aws_efs_backup_policy.backup_policy]
+
+  provisioner "local-exec" {
+  command = "echo ADD-ON - EFS Installation : Completed  >> logs/process.log"
+  }
+}

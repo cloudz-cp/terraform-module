@@ -99,3 +99,20 @@ resource "aws_eks_addon" "kube-proxy" {
     addon_name   = "kube-proxy"
     resolve_conflicts = "OVERWRITE"
 }
+
+resource "null_resource" "log_eks_start" {
+  depends_on = [aws_iam_role_policy_attachment.cluster-AmazonEKSClusterPolicy]
+
+  provisioner "local-exec" {
+  command = "echo EKS - EKS Installation : Start >> logs/process.log"
+  }
+}
+
+
+resource "null_resource" "log_eks_exit" {
+  depends_on = [module.eks]
+
+  provisioner "local-exec" {
+  command = "echo EKS - EKS Installation : Completed >> logs/process.log"
+  }
+}
