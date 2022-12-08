@@ -118,7 +118,9 @@ resource "helm_release" "aws_efs_csi_driver" {
 
 
 resource "null_resource" "efs_start" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
     provisioner "local-exec" {
     command = "echo ADD-ON - EFS Installation : Start >> logs/process.log"
   }
@@ -126,7 +128,9 @@ resource "null_resource" "efs_start" {
 
 
 resource "null_resource" "efs_completed" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   depends_on = [aws_efs_backup_policy.backup_policy]
 
   provisioner "local-exec" {

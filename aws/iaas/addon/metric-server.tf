@@ -29,7 +29,9 @@ resource "helm_release" "metric-server" {
 
 
 resource "null_resource" "metric-server_start" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   provisioner "local-exec" {
   command = "echo ADD-ON -  Metric-server Installation : Start >> logs/process.log"
   }
@@ -37,7 +39,9 @@ resource "null_resource" "metric-server_start" {
 
 
 resource "null_resource" "metric-server_completed" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   depends_on = [helm_release.metric-server]
 
   provisioner "local-exec" {

@@ -46,13 +46,22 @@ module "nodegroup" {
 
     create_iam_role = false
 
-    remote_access = each.value["ssh"].public_key != "" ? { 
+
+    // 지원시 remote_access 의 value와 상관없이 nodegroup을 매번 다시 생성함 
+
+    /*remote_access =  { 
+        ec2_ssh_key = each.value["ssh"].public_key 
+        source_security_group_ids = each.value["ssh"].public_key != "" ? aws_security_group.ssh.*.id : []
+    }*/
+
+    /*remote_access = each.value["ssh"].public_key != "" ? { 
         ec2_ssh_key = each.value["ssh"].public_key 
         source_security_group_ids = aws_security_group.ssh.*.id
     } : {
         ec2_ssh_key = null 
         source_security_group_ids = []
-    }
+    }*/
+
     vpc_security_group_ids = [var.eks.node_security_group_id]
     
 }
@@ -115,8 +124,11 @@ resource "null_resource" "node_labels" {
         export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
         export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
         export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
+        export AWS_DEFAULT_REGION=${var.aws_credentials.aws_region}
 
-        aws eks update-kubeconfig --name ${var.eks.cluster_id}
+        aws eks update-kubeconfig --name ${var.eks.cluster_id} --kubeconfig ${abspath(path.root)}/kube-config
+        export KUBECONFIG=${abspath(path.root)}/kube-config
+
         kubectl label node -l role="${each.value["node_role"]}" node-role.kubernetes.io/${each.value["node_role"]}="${each.value["node_role"]}" --overwrite
         EOT
     }
@@ -158,17 +170,22 @@ resource "aws_eks_addon" "coredns" {
 
 
 resource "null_resource" "node_start" {
-  depends_on = [aws_iam_role.eks_ng_role]
-
-  provisioner "local-exec" {
-  command = "echo EKS - Nodegroup Installation : Start >> logs/process.log"
-  }
+    depends_on = [aws_iam_role.eks_ng_role]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
+    provisioner "local-exec" {
+      command = "echo EKS - Nodegroup Installation : Start >> logs/process.log"
+    }
 }
 
 
 resource "null_resource" "node_completed" {
   depends_on = [module.nodegroup]
-
+  triggers = {
+    always_run = "${timestamp()}"
+  }
   provisioner "local-exec" {
   command = "echo EKS - Nodegroup Installation : Completed >> logs/process.log"
   }

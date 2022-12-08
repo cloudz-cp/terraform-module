@@ -15,6 +15,7 @@ resource "null_resource" "init" {
     triggers = {
         always_run = "${timestamp()}"
     }
+
     provisioner "local-exec" {
         command = <<EOT
         ${path.module}/file_generator.sh ${local.efs_count} helm_values
@@ -24,6 +25,10 @@ resource "null_resource" "init" {
 
 
 resource "null_resource" "log_initializer" {
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+     
     provisioner "local-exec" {
         command = "echo ZCP Cluster Provisioning Start!! > logs/process.log"
     }

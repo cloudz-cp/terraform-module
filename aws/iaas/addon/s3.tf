@@ -34,7 +34,9 @@ resource "aws_s3_bucket_public_access_block" "zcp" {
 
 
 resource "null_resource" "s3_start" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   provisioner "local-exec" {
   command = "echo ADD-ON - S3 Installation : Start >> logs/process.log"
   }
@@ -42,7 +44,9 @@ resource "null_resource" "s3_start" {
 
 
 resource "null_resource" "s3_completed" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   depends_on = [aws_s3_bucket_public_access_block.zcp]
 
   provisioner "local-exec" {

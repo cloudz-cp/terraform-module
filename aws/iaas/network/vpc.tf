@@ -18,6 +18,10 @@ module "vpc" {
 
 
 resource "null_resource" "vpc_start" {
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
     provisioner "local-exec" {
         command = "echo Network - VPC Installation  : Start  >> logs/process.log"
     }
@@ -25,6 +29,10 @@ resource "null_resource" "vpc_start" {
 
 
 resource "null_resource" "vpc_completed" {
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
     depends_on = [module.vpc]
 
     provisioner "local-exec" {

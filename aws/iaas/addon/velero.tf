@@ -136,7 +136,9 @@ resource "helm_release" "vmware-tanzu2" {
 }*/
 
 resource "null_resource" "velero_started" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   provisioner "local-exec" {
   command = "echo ADD-ON - Velero Installation : Start >> logs/process.log"
   }
@@ -144,7 +146,9 @@ resource "null_resource" "velero_started" {
 
 
 resource "null_resource" "velero_completed" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
   depends_on = [helm_release.vmware-tanzu2]
 
   provisioner "local-exec" {

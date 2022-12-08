@@ -89,7 +89,7 @@ resource "aws_eip" "eks" {
 
 resource "aws_nat_gateway" "eks" {
     depends_on = [aws_internet_gateway.eks]
-
+   
     count = var.vpc.single_nat_gateway? 1: length(local.nat_subnets)
     allocation_id = aws_eip.eks[count.index].id
     subnet_id     = aws_subnet.eks[local.nat_subnets[count.index]].id
@@ -101,7 +101,10 @@ resource "aws_nat_gateway" "eks" {
 
 resource "null_resource" "subnet_start" {
   depends_on = [null_resource.vpc_completed]
-
+  triggers = {
+        always_run = "${timestamp()}"
+    }
+  
   provisioner "local-exec" {
   command = "echo Network - Subnet Installation  : Start  >> logs/process.log"
   }
@@ -109,9 +112,12 @@ resource "null_resource" "subnet_start" {
 
 
 resource "null_resource" "subnet_completed" {
-  depends_on = [aws_subnet.eks]
-
-  provisioner "local-exec" {
-  command = "echo  Network - Subnet Installation : Completed  >> logs/process.log"
-  }
+    depends_on = [aws_subnet.eks]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
+    provisioner "local-exec" {
+        command = "echo  Network - Subnet Installation : Completed  >> logs/process.log"
+    }
 }

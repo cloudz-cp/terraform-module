@@ -101,18 +101,24 @@ resource "aws_eks_addon" "kube-proxy" {
 }
 
 resource "null_resource" "log_eks_start" {
-  depends_on = [aws_iam_role_policy_attachment.cluster-AmazonEKSClusterPolicy]
-
-  provisioner "local-exec" {
-  command = "echo EKS - EKS Installation : Start >> logs/process.log"
-  }
+    depends_on = [aws_iam_role_policy_attachment.cluster-AmazonEKSClusterPolicy]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
+    provisioner "local-exec" {
+        command = "echo EKS - EKS Installation : Start >> logs/process.log"
+    }
 }
 
 
-resource "null_resource" "log_eks_exit" {
-  depends_on = [module.eks]
-
-  provisioner "local-exec" {
-  command = "echo EKS - EKS Installation : Completed >> logs/process.log"
-  }
+resource "null_resource" "log_eks_completed" {
+    depends_on = [module.eks]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+  
+    provisioner "local-exec" {
+        command = "echo EKS - EKS Installation : Completed >> logs/process.log"
+    }
 }

@@ -89,6 +89,7 @@ resource "null_resource" "public_lb_tags" {
             export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
             export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
             export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
+            export AWS_DEFAULT_REGION=${var.aws_credentials.aws_region}
 
             aws ec2 create-tags --resources ${var.public_lb_subnet_ids[count.index]} --tags Key=kubernetes.io/role/elb,Value=1
         EOT
@@ -105,6 +106,7 @@ resource "null_resource" "private_lb_tags" {
             export AWS_ACCESS_KEY_ID=${var.aws_credentials.aws_access_key}
             export AWS_SECRET_ACCESS_KEY=${var.aws_credentials.aws_secret_key}
             export AWS_SESSION_TOKEN=${var.aws_credentials.aws_session_token}
+            export AWS_DEFAULT_REGION=${var.aws_credentials.aws_region}
 
             aws ec2 create-tags --resources ${var.private_lb_subnet_ids[count.index]} --tags Key=kubernetes.io/role/internal-elb,Value=1
         EOT
@@ -117,7 +119,9 @@ resource "random_string" "suffix" {
 }
 
 resource "null_resource" "albc_start" {
-
+    triggers = {
+        always_run = "${timestamp()}"
+    }
     provisioner "local-exec" {
     command = "echo ADD-ON - Aws Load Balancer Controller Installation : Start >> logs/process.log"
     }
@@ -126,9 +130,11 @@ resource "null_resource" "albc_start" {
 
 resource "null_resource" "albc_completed" {
 
-  depends_on = [helm_release.aws_load_balancer_controller]
-
-  provisioner "local-exec" {
-  command = "echo ADD-ON - Aws Load Balancer Controller Installation : Completed  >> logs/process.log"
-  }
+    depends_on = [helm_release.aws_load_balancer_controller]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+    provisioner "local-exec" {
+        command = "echo ADD-ON - Aws Load Balancer Controller Installation : Completed  >> logs/process.log"
+    }
 }

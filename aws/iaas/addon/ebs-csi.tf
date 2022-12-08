@@ -71,17 +71,22 @@ resource "helm_release" "aws_ebs_csi_driver" {
 
 
 resource "null_resource" "ebs_start" {
-  provisioner "local-exec" {
-  command = "echo ADD-ON - Aws EBS Csi Driver Installation : Start >> logs/process.log"
-  }
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+    provisioner "local-exec" {
+        command = "echo ADD-ON - Aws EBS Csi Driver Installation : Start >> logs/process.log"
+    }
 }
 
 
 resource "null_resource" "ebs_completed" {
 
-  depends_on = [helm_release.aws_ebs_csi_driver]
-
-  provisioner "local-exec" {
-  command = "echo ADD-ON - Aws EBS Csi Driver Installation : Completed  >> logs/process.log"
-  }
+    depends_on = [helm_release.aws_ebs_csi_driver]
+    triggers = {
+        always_run = "${timestamp()}"
+    }
+    provisioner "local-exec" {
+        command = "echo ADD-ON - Aws EBS Csi Driver Installation : Completed  >> logs/process.log"
+    }
 }
