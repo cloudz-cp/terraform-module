@@ -16,6 +16,7 @@ provider "kubernetes" {
             AWS_ACCESS_KEY_ID=var.aws_credentials.aws_access_key
             AWS_SECRET_ACCESS_KEY=var.aws_credentials.aws_secret_key
             AWS_SESSION_TOKEN=var.aws_credentials.aws_session_token
+            AWS_DEFAULT_REGION=var.aws_credentials.aws_region
         }
     }
 }
