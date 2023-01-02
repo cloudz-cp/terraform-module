@@ -5,7 +5,7 @@ SUBNET=$2
 SG=$3
 ENI_PATH=$4
 
-cat <<EOF >> ${ENI_PATH}/eni-config/eniconfig.yaml
+cat <<EOF >> ${ENI_PATH}/eniconfig.yaml
 ---
 apiVersion: crd.k8s.amazonaws.com/v1alpha1
 kind: ENIConfig

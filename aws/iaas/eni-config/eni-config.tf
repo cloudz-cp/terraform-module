@@ -32,10 +32,10 @@ resource "null_resource" "eniconfig" {
 
         kubectl set env daemonset aws-node -n kube-system AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG=true
         kubectl set env daemonset aws-node -n kube-system ENI_CONFIG_LABEL_DEF=topology.kubernetes.io/zone
-        echo "" > ${path.module}/eni-config/eniconfig.yaml
+        echo "" > ${path.module}/eniconfig.yaml
         ${path.module}/setup_eniconfig.sh $az1 $sub1 $sg ${path.module}
         ${path.module}/setup_eniconfig.sh $az2 $sub2 $sg ${path.module}
-        kubectl apply -f ${path.module}/eni-config/eniconfig.yaml
+        kubectl apply -f ${path.module}/eniconfig.yaml
     EOT
 }
 }
